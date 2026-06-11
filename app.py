@@ -35,8 +35,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 🚨 التعديل السحري هنا: ضع رقم معرف (ID) ملف الـ Google Sheet الخاص بك بدلاً من المكتوب بالأسفل
-# رقم الـ ID هو الرابط الطويل الموجود في المتصفح لملف الشيت الخاص بك بين /d/ و /edit
+# 🎯 تم وضع الـ ID الخاص بك هنا بنجاح ليرتبط بملفك فوراً
 SHEET_ID = "1es1v2CvHlmt8uHYnw9mzqBKF8k8VijGE2s5jMdT-PlA"
 
 TEACHERS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=teachers"
@@ -44,15 +43,15 @@ EXAMS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:
 
 def get_table_data(url):
     try:
-        # إجبار بايثون على جلب البيانات مباشرة دون الاعتماد على الكاش القديم
-        return pd.read_csv(url, cache_dates=False).to_dict(orient="records")
+        # قراءة البيانات مباشرة لضمان التحديث اللحظي للأسماء المضافة
+        return pd.read_csv(url, index_col=False).to_dict(orient="records")
     except:
         return []
 
 teachers_list = get_table_data(TEACHERS_URL)
 exams_list = get_table_data(EXAMS_URL)
 
-# 🚀 دالة إرسال البيانات السحابية المستقرة
+# دالة إرسال البيانات السحابية المستقرة
 def send_to_google_sheet(payload):
     try:
         script_url = st.secrets["SCRIPT_URL"]
@@ -204,7 +203,4 @@ else:
                             <br>
                             <p style="text-align:left; font-weight:bold; color:black; padding-left:20px;">مدرس المادة: {exam.get('teacher', '-')}</p>
                         </div>
-                        """, unsafe_allow_html=True)
-                        st.markdown('<button onclick="window.print()" style="width:100%; font-weight:bold; background-color:#ff9a00; color:white; border:none; padding:8px; border-radius:5px; cursor:pointer;">🖨️ طباعة ورقة الأسئلة هذه فوراً</button>', unsafe_allow_html=True)
-    elif admin_password != "":
-        st.error("الرمز السري غير صحيح!")
+                        """,
