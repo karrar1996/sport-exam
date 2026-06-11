@@ -35,7 +35,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# الـ ID الخاص بملفك الشخصي لقراءة البيانات مباشرة وبشكل مستقر
+# الـ ID الثابت لملف الشيت الخاص بك
 SHEET_ID = "1es1v2CvHlmt8uHYnw9mzqBKF8k8VijGE2s5jMdT-PlA"
 
 TEACHERS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=teachers"
@@ -43,7 +43,7 @@ EXAMS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:
 
 def get_table_data(url):
     try:
-        # قراءة البيانات مع تلافي مشاكل التخزين المؤقت لقراءة الأسماء الجديدة
+        # تلافي مشاكل التخزين المؤقت لقراءة الأسماء فوراً
         return pd.read_csv(url, index_col=False).to_dict(orient="records")
     except:
         return []
@@ -51,14 +51,23 @@ def get_table_data(url):
 teachers_list = get_table_data(TEACHERS_URL)
 exams_list = get_table_data(EXAMS_URL)
 
-# دالة إرسال البيانات السحابية المستقرة
+# دالة إرسال البيانات السحابية المطورة والمؤمنة ضد أخطاء الاتصال
 def send_to_google_sheet(payload):
     try:
+        # جلب الرابط من الـ Secrets
         script_url = st.secrets["SCRIPT_URL"]
-        res = requests.post(script_url, params=payload, timeout=10)
-        if res.status_code == 200:
+        
+        # محاولة الإرسال بالطريقة الأولى (POST JSON)
+        headers = {"Content-Type": "application/json"}
+        res = requests.post(script_url, json=payload, timeout=15)
+        if "Success" in res.text or res.status_code == 200:
             return True
-    except:
+            
+        # محاولة احتياطية ثانية في حال كان الـ Script يتوقع Params عادية
+        res_backup = requests.post(script_url, params=payload, timeout=15)
+        if "Success" in res_backup.text or res_backup.status_code == 200:
+            return True
+    except Exception as e:
         pass
     return False
 
