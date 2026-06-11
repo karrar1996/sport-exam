@@ -6,7 +6,7 @@ import requests
 
 st.set_page_config(page_title="نظام إدارة امتحانات قسم الرياضة", layout="wide")
 
-# تصميم احترافي متكامل لواجهة اليمين إلى اليسار والطباعة والشعار
+# تنسيق الواجهة بالكامل لتدعم اللغة العربية من اليمين إلى اليسار
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght=400;700&display=swap');
@@ -25,10 +25,7 @@ st.markdown("""
         margin-bottom: 20px;
         color: black;
     }
-    .logo-img {
-        max-width: 100px;
-        margin-bottom: 10px;
-    }
+    .logo-img { max-width: 100px; margin-bottom: 10px; }
     @media print {
         body * { visibility: hidden; }
         .print-area, .print-area * { visibility: visible; }
@@ -38,36 +35,37 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 🔗 رابط ملف الجوجل شيت الخاص بك للقراءة والعرض
+# 🔗 رابط جلب البيانات للقراءة الفورية من ملفك السحابي
 SHEET_ID = "1es1v2CvHlmt8uHYnw9mzqBKF8k8VijGE2s5jMdT-PlA"
 TEACHERS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=teachers"
 EXAMS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=exams"
 
-# جلب بيانات الأساتذة من الشيت
-try:
-    df_t = pd.read_csv(TEACHERS_URL)
-    teachers_list = df_t.to_dict(orient="records")
-except:
+# دالة برمجية مرنة لجلب البيانات بأمان لتجنب توقف التطبيق
+def get_table_data(url):
+    try:
+        return pd.read_csv(url).to_dict(orient="records")
+    except:
+        return []
+
+teachers_list = get_table_data(TEACHERS_URL)
+if not teachers_list:
     teachers_list = [{"name": "م.د امير فاهم محسن", "code": "1234", "phone": "9647700000000"}]
 
-# جلب بيانات الأسئلة من الشيت لكي تعرضها في لوحة التحكم
-try:
-    df_e = pd.read_csv(EXAMS_URL)
-    exams_list = df_e.to_dict(orient="records")
-except:
-    exams_list = []
+exams_list = get_table_data(EXAMS_URL)
 
-# 🚀 الدالة البرمجية المسؤولة عن إرسال وحفظ البيانات تلقائياً داخل الجوجل شيت
-def append_to_google_sheet(sheet_name, row_data):
-    # نستخدم بروتوكول Google Forms الصامت لإرسال البيانات أوتوماتيكياً وحفظها فوراً داخل الشيت
-    url = "https://docs.google.com/forms/d/e/1FAIpQLSdfS-r3gT3Xb1S6-M8ZJ9m6p7f8g9h0j1k2l3m4n5o6p7q8r/formResponse"
+# 🚀 الدالة المباشرة والآمنة لإرسال البيانات وحفظها في السحابة فوراً
+def send_to_google_sheet(payload):
     try:
-        requests.post(url, data=row_data, timeout=10)
-        return True
+        # جلب الرابط المخزن في إعدادات Secrets بأمان
+        script_url = st.secrets["SCRIPT_URL"]
+        res = requests.post(script_url, params=payload, timeout=10)
+        if res.status_code == 200:
+            return True
     except:
-        return False
+        pass
+    return False
 
-# دالة معالجة وترتيب نص الأسئلة والخيارات تلقائياً
+# دالة تنسيق نصوص الأسئلة القادمة من ملف الوورد تلقائياً
 def process_exam_text(file_buffer):
     doc = docx.Document(file_buffer)
     full_text = []
@@ -90,48 +88,46 @@ st.sidebar.title("🎛️ منظومة التحكم")
 role = st.sidebar.radio("اختر نوع الدخول:", ["👨‍🏫 لوحة التدريسي", "👑 لوحة المسؤول (الأدمن)"])
 
 # ----------------------------------------------------
-# 1. لوحة التدريسي (يرسل الأسئلة لتدخل تلقائياً إلى ملفك السحابي)
+# 1. لوحة التدريسي
 # ----------------------------------------------------
 if role == "👨‍🏫 لوحة التدريسي":
     st.title("📝 رفع الأسئلة - قسم التربية البدنية")
     t_name = st.text_input("اسم التدريسي الثنائي أو الثلاثي:")
     t_code = st.text_input("الرمز السري:", type="password")
     
-    auth = any(str(t['name']).strip() == t_name.strip() and str(t['code']).strip() == t_code.strip() for t in teachers_list)
+    auth = any(str(t.get('name', '')).strip() == t_name.strip() and str(t.get('code', '')).strip() == t_code.strip() for t in teachers_list)
     
     if auth:
         st.success(f"مرحباً بك: {t_name}")
-        col1, col2 = st.columns(2)
-        with col1:
-            exam_type = st.text_input("نوع الامتحان (مثال: النهائي):", value="النهائي")
-            stage = st.text_input("المرحلة:")
-            subject = st.text_input("المادة:")
-        with col2:
-            day = st.text_input("اليوم:")
-            date = st.text_input("التاريخ:")
-            exam_time = st.text_input("الوقت:")
-        
+        exam_type = st.text_input("نوع الامتحان:", value="النهائي")
+        stage_field = st.text_input("المرحلة الدراسية:")
+        subject_field = st.text_input("المادة العلمية:")
+        day_field = st.text_input("اليوم:")
+        date_field = st.text_input("التاريخ:")
+        time_field = st.text_input("الوقت المحدد:")
         head_sig = st.text_input("رئيس القسم:")
         uploaded_file = st.file_uploader("ارفع ملف الأسئلة بمقاس الوورد (.docx)", type=["docx"])
         
         if st.button("🚀 إرسال وحفظ الأسئلة مباشرة في السحابة"):
-            if uploaded_file and stage and subject:
+            if uploaded_file and stage_field and subject_field:
                 content = process_exam_text(uploaded_file)
                 
-                # تجهيز البيانات للإرسال التلقائي
-                payload = {
-                    "entry.1000001": t_name, "entry.1000002": exam_type, "entry.1000003": stage,
-                    "entry.1000004": subject, "entry.1000005": day, "entry.1000006": date,
-                    "entry.1000007": exam_time, "entry.1000008": head_sig, "entry.1000009": content,
-                    "entry.1000010": "قيد التدقيق ⏳"
+                exam_payload = {
+                    "sheet": "exams", "teacher": t_name, "exam_type": exam_type, "stage": stage_field,
+                    "subject": subject_field, "day": date_field, "date": date_field, "time": time_field,
+                    "head": head_sig, "content": content, "status": "قيد التدقيق ⏳"
                 }
-                append_to_google_sheet("exams", payload)
-                st.success("✅ تم إرسال الأسئلة وحفظها تلقائياً داخل الـ Google Sheet واكتمل التنسيق بنجاح!")
+                
+                if send_to_google_sheet(exam_payload):
+                    st.success("✅ تم إرسال وحفظ الأسئلة تلقائياً داخل الـ Google Sheet بنجاح واكتمل الترتيب أوتوماتيكياً!")
+                    st.balloons()
+                else:
+                    st.error("❌ حدث خطأ أثناء الاتصال بالسحابة، يرجى التحقق من إعداد الرابط البرمجي في Secrets.")
             else:
-                st.error("يرجى ملء جميع الحقول ورفع الملف أولاً.")
+                st.error("يرجى ملء جميع الحقول ورفع ملف الأسئلة أولاً.")
 
 # ----------------------------------------------------
-# 2. لوحة المسؤول المحمية (توليد وإرسال الرموز تلقائياً + الطباعة)
+# 2. لوحة المسؤول (توليد الرموز وحفظها مباشرة في الشيت)
 # ----------------------------------------------------
 else:
     st.title("👑 بوابة المسؤول الوحيد للنظام")
@@ -142,16 +138,69 @@ else:
         tab1, tab2, tab3 = st.tabs(["🔑 توليد الرموز للتدريسيين", "📋 الحسابات الحالية", "🧐 تدقيق وطباعة الأسئلة"])
         
         with tab1:
-            st.subheader("إضافة تدريسي جديد وإرساله تلقائياً إلى السحابة")
+            st.subheader("إضافة تدريسي جديد وتوليد رمز دخول له")
             new_name = st.text_input("اسم التدريسي الجديد:")
             new_code = st.text_input("الرمز السري المخصص له:")
             new_phone = st.text_input("رقم هاتف الواتساب (مثال: 9647700000000):")
             
             if st.button("💾 توليد الرمز وإرساله تلقائياً للشيت"):
                 if new_name and new_code and new_phone:
-                    # تجهيز البيانات لإرسال حساب الأستاذ
-                    payload_teacher = {
-                        "entry.2000001": new_name,
-                        "entry.2000002": new_code,
-                        "entry.2000003": new_phone
+                    teacher_payload = {
+                        "sheet": "teachers",
+                        "name": new_name,
+                        "code": new_code,
+                        "phone": new_phone
                     }
+                    
+                    if send_to_google_sheet(teacher_payload):
+                        st.success(f"✅ تم توليد الحساب للتدريسي {new_name} وحُفظ تلقائياً في ملف الـ Google Sheet!")
+                        st.balloons()
+                    else:
+                        st.error("❌ عذراً، لم يتم إرسال البيانات. تأكد من تفعيل الرابط البرمجي في الـ Secrets بشكل صحيح.")
+                else:
+                    st.error("يرجى ملء كافة الحقول أولاً.")
+                
+        with tab2:
+            st.subheader("قائمة التدريسيين المسجلين حالياً في ملفك:")
+            if teachers_list:
+                st.dataframe(pd.DataFrame(teachers_list))
+            else:
+                st.info("لا توجد بيانات مسجلة حالياً.")
+                
+        with tab3:
+            if not exams_list:
+                st.info("لا توجد ملفات أسئلة مسجلة حالياً في ورقة الـ exams داخل الشيت.")
+            else:
+                for idx, exam in enumerate(exams_list):
+                    with st.expander(f"📋 أسئلة مادة ({exam.get('subject', 'غير محدد')}) - التدريسي: {exam.get('teacher', 'غير محدد')}"):
+                        st.markdown(f"""
+                        <div class="print-area">
+                            <div class="main-header">
+                                <img class="logo-img" src="https://i.imgur.com/v8bS6mR.png" alt="شعار الجامعة الإسلامية"><br>
+                                <h3 style="margin:5px; color:black;">الجامعة الإسلامية - كلية التربية</h3>
+                                <h4 style="margin:5px; color:black;">قسم التربية البدنية وعلوم الرياضة</h4>
+                                <h5 style="margin:5px; color:black;">أسئلة امتحان {exam.get('exam_type', 'النهائي')}</h5>
+                                <hr style="border:1px solid black; margin:10px 0;">
+                                <table style="width:100%; text-align:right; border-collapse:collapse; color:black; font-weight:bold;">
+                                    <tr>
+                                        <td>المرحلة: {exam.get('stage', '-')}</td>
+                                        <td>المادة: {exam.get('subject', '-')}</td>
+                                        <td>الوقت: {exam.get('time', '-')}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>اليوم: {exam.get('day', '-')}</td>
+                                        <td>التاريخ: {exam.get('date', '-')}</td>
+                                        <td>رئيس القسم: {exam.get('head', '-')}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div style="white-space: pre-wrap; font-size:18px; padding:15px; border:1px solid #ccc; border-radius:5px; background:#fff; color:black; line-height:1.8; text-align:right;">
+{exam.get('content', 'لا يوجد محتوى')}
+                            </div>
+                            <br>
+                            <p style="text-align:left; font-weight:bold; color:black; padding-left:20px;">مدرس المادة: {exam.get('teacher', '-')}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        st.markdown('<button onclick="window.print()" style="width:100%; font-weight:bold; background-color:#ff9a00; color:white; border:none; padding:8px; border-radius:5px; cursor:pointer;">🖨️ طباعة ورقة الأسئلة هذه فوراً</button>', unsafe_allow_html=True)
+    elif admin_password != "":
+        st.error("الرمز السري غير صحيح!")
