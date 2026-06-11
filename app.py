@@ -30,7 +30,7 @@ st.markdown("""
         margin-bottom: 10px;
     }
     /* إعدادات خاصة بالطباعة لجعل الأسئلة تخرج كورقة رسمية */
-    @media print {
+    GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1es1v2CvHlmt8uHYnw9mzqBKF8k8VijGE2s5jMdT-PlA/edit?usp=sharing"
         body * { visibility: hidden; }
         .print-area, .print-area * { visibility: visible; }
         .print-area { position: absolute; left: 0; top: 0; width: 100%; direction: rtl; }
