@@ -1,4 +1,2 @@
 streamlit
 python-docx
-pandas
-st-gsheets-connection
