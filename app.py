@@ -35,14 +35,17 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 🔗 روابط جلب البيانات للقراءة المباشرة من ملفك السحابي
+# 🚨 التعديل السحري هنا: ضع رقم معرف (ID) ملف الـ Google Sheet الخاص بك بدلاً من المكتوب بالأسفل
+# رقم الـ ID هو الرابط الطويل الموجود في المتصفح لملف الشيت الخاص بك بين /d/ و /edit
 SHEET_ID = "1es1v2CvHlmt8uHYnw9mzqBKF8k8VijGE2s5jMdT-PlA"
+
 TEACHERS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=teachers"
 EXAMS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=exams"
 
 def get_table_data(url):
     try:
-        return pd.read_csv(url).to_dict(orient="records")
+        # إجبار بايثون على جلب البيانات مباشرة دون الاعتماد على الكاش القديم
+        return pd.read_csv(url, cache_dates=False).to_dict(orient="records")
     except:
         return []
 
@@ -83,19 +86,17 @@ st.sidebar.title("🎛️ منظومة التحكم")
 role = st.sidebar.radio("اختر نوع الدخول:", ["👨‍🏫 لوحة التدريسي", "👑 لوحة المسؤول (الأدمن)"])
 
 # ----------------------------------------------------
-# 1. لوحة التدريسي (تم تحديث المطابقة الذكية هنا لتقبل 11 ومثنى)
+# 1. لوحة التدريسي
 # ----------------------------------------------------
 if role == "👨‍🏫 لوحة التدريسي":
     st.title("📝 رفع الأسئلة - قسم التربية البدنية")
     t_name = st.text_input("اسم التدريسي الثنائي أو الثلاثي:")
     t_code = st.text_input("الرمز السري:", type="password")
     
-    # دالة مطابقة متطورة تتفادى مشكلة الـ 11.0 وتطابق الاسم حتى لو كتب جزءاً منه
     auth = False
     if t_name and t_code:
         for t in teachers_list:
             db_name = str(t.get('name', '')).strip()
-            # التخلص من علامة الفاصلة العشرية إذا كان الرمز رقماً قادماً من جوجل شيت
             db_code = str(t.get('code', '')).split('.')[0].strip()
             
             if db_name == t_name.strip() and db_code == t_code.strip():
@@ -175,7 +176,7 @@ else:
                 st.info("لا توجد ملفات أسئلة مسجلة حالياً في ورقة الـ exams داخل الشيت.")
             else:
                 for idx, exam in enumerate(exams_list):
-                    with st.expander(f"📋 أسئلة مادة ({exam.get('subject', 'غير مححدد')}) - التدريسي: {exam.get('teacher', 'غير محدد')}"):
+                    with st.expander(f"📋 أسئلة مادة ({exam.get('subject', 'غير محدد')}) - التدريسي: {exam.get('teacher', 'غير محدد')}"):
                         st.markdown(f"""
                         <div class="print-area">
                             <div class="main-header">
