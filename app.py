@@ -37,7 +37,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 🔗 تحويل رابط الجوجل شيت الخاص بك إلى رابط سحب بيانات مباشر ومستقر
+# 🔗 رابط السحب والربط المباشر بملفك الحقيقي
 SHEET_ID = "1es1v2CvHlmt8uHYnw9mzqBKF8k8VijGE2s5jMdT-PlA"
 TEACHERS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=teachers"
 EXAMS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=exams"
@@ -56,7 +56,7 @@ try:
 except:
     exams_list = []
 
-# دالة ذكية لتنسيق وترتيب الأسئلة والخيارات
+# دالة تنسيق وترتيب الأسئلة والخيارات
 def process_exam_text(file_buffer):
     doc = docx.Document(file_buffer)
     full_text = []
@@ -106,8 +106,8 @@ if role == "👨‍🏫 لوحة التدريسي":
         if st.button("إرسال الأسئلة لرئاسة القسم"):
             if uploaded_file and stage and subject:
                 content = process_exam_text(uploaded_file)
-                st.info("تمت معالجة الملف بنجاح. لحفظ التغييرات بشكل دائم يرجى نسخ محتوى الجدول إلى ملف الـ Google Sheet الخاص بك.")
-                st.text_area("نص الأسئلة المنسق والجاهز للنقل:", content, height=200)
+                st.success("✅ تمت معالجة وترتيب الأسئلة تلقائياً بنجاح! انسخ النص أدناه وضعه في ملف الـ Google Sheet المخصص للأسئلة:")
+                st.text_area("نص الأسئلة المرتب والمنسق (جاهز للنسخ المباشر):", content, height=300)
             else:
                 st.error("يرجى ملء جميع الحقول أولاً.")
 
@@ -120,18 +120,28 @@ else:
     
     if admin_password == "119":
         st.success("تم التحقق بنجاح! مرحباً بك أستاذنا المسؤول.")
-        tab1, tab2 = st.tabs(["🔑 الحسابات المسجلة حالياً", "🧐 تدقيق وطباعة الأسئلة"])
+        tab1, tab2, tab3 = st.tabs(["🔑 توليد الرموز للتدريسيين", "📋 الحسابات الحالية", "🧐 تدقيق وطباعة الأسئلة"])
         
         with tab1:
-            st.subheader("قائمة التدريسيين المسجلين في ملف الـ Google Sheet:")
-            st.dataframe(pd.DataFrame(teachers_list))
+            st.subheader("إضافة تدريسي جديد وتوليد رمز دخول له")
+            new_name = st.text_input("اسم التدريسي الجديد:")
+            new_code = st.text_input("الرمز السري المخصص له:")
+            new_phone = st.text_input("رقم هاتف الواتساب (مثال: 9647700000000):")
+            
+            # رابط ماكرو الإرسال المباشر لملفك
+            st.markdown(f'[👉 اضغط هنا لفتح نموذج الحفظ المباشر في السحابة](https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit?usp=sharing)', unsafe_allow_html=True)
+            st.info("💡 يمكنك كتابة الاسم والرمز السري في ملف الجوجل شيت مباشرة عبر الرابط أعلاه، وسيظهر فوراً في لوحة التحكم هنا!")
                 
         with tab2:
+            st.subheader("قائمة التدريسيين المسجلين حالياً:")
+            st.dataframe(pd.DataFrame(teachers_list))
+                
+        with tab3:
             if not exams_list:
                 st.info("لا توجد ملفات أسئلة مسجلة حالياً في ورقة الـ exams داخل الشيت.")
             else:
                 for idx, exam in enumerate(exams_list):
-                    with st.expander(f"📋 أسئلة مادة ({exam.get('subject', 'غير محدد')}) - التدريسي: {exam.get('teacher', 'غير محدد')}"):
+                    with st.expander(f"📋 أسئلة مادة ({exam.get('subject', 'غير مححدد')}) - التدريسي: {exam.get('teacher', 'غير محدد')}"):
                         st.markdown(f"""
                         <div class="print-area">
                             <div class="main-header">
