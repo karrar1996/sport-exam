@@ -6,7 +6,7 @@ import requests
 
 st.set_page_config(page_title="نظام إدارة امتحانات قسم الرياضة", layout="wide")
 
-# تنسيق الواجهة بالكامل لتدعم اللغة العربية من اليمين إلى اليسار
+# تنسيق الواجهة بالكامل لتدعم اللغة العربية من اليمين إلى اليسار والطباعة
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght=400;700&display=swap');
@@ -35,12 +35,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 🔗 رابط جلب البيانات للقراءة الفورية من ملفك السحابي
+# 🔗 روابط جلب البيانات للقراءة المباشرة من ملفك السحابي
 SHEET_ID = "1es1v2CvHlmt8uHYnw9mzqBKF8k8VijGE2s5jMdT-PlA"
 TEACHERS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=teachers"
 EXAMS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=exams"
 
-# دالة برمجية مرنة لجلب البيانات بأمان لتجنب توقف التطبيق
 def get_table_data(url):
     try:
         return pd.read_csv(url).to_dict(orient="records")
@@ -48,15 +47,11 @@ def get_table_data(url):
         return []
 
 teachers_list = get_table_data(TEACHERS_URL)
-if not teachers_list:
-    teachers_list = [{"name": "م.د امير فاهم محسن", "code": "1234", "phone": "9647700000000"}]
-
 exams_list = get_table_data(EXAMS_URL)
 
-# 🚀 الدالة المباشرة والآمنة لإرسال البيانات وحفظها في السحابة فوراً
+# 🚀 دالة إرسال البيانات السحابية المستقرة
 def send_to_google_sheet(payload):
     try:
-        # جلب الرابط المخزن في إعدادات Secrets بأمان
         script_url = st.secrets["SCRIPT_URL"]
         res = requests.post(script_url, params=payload, timeout=10)
         if res.status_code == 200:
@@ -65,7 +60,7 @@ def send_to_google_sheet(payload):
         pass
     return False
 
-# دالة تنسيق نصوص الأسئلة القادمة من ملف الوورد تلقائياً
+# دالة معالجة نصوص الوورد
 def process_exam_text(file_buffer):
     doc = docx.Document(file_buffer)
     full_text = []
@@ -88,17 +83,27 @@ st.sidebar.title("🎛️ منظومة التحكم")
 role = st.sidebar.radio("اختر نوع الدخول:", ["👨‍🏫 لوحة التدريسي", "👑 لوحة المسؤول (الأدمن)"])
 
 # ----------------------------------------------------
-# 1. لوحة التدريسي
+# 1. لوحة التدريسي (تم تحديث المطابقة الذكية هنا لتقبل 11 ومثنى)
 # ----------------------------------------------------
 if role == "👨‍🏫 لوحة التدريسي":
     st.title("📝 رفع الأسئلة - قسم التربية البدنية")
     t_name = st.text_input("اسم التدريسي الثنائي أو الثلاثي:")
     t_code = st.text_input("الرمز السري:", type="password")
     
-    auth = any(str(t.get('name', '')).strip() == t_name.strip() and str(t.get('code', '')).strip() == t_code.strip() for t in teachers_list)
-    
+    # دالة مطابقة متطورة تتفادى مشكلة الـ 11.0 وتطابق الاسم حتى لو كتب جزءاً منه
+    auth = False
+    if t_name and t_code:
+        for t in teachers_list:
+            db_name = str(t.get('name', '')).strip()
+            # التخلص من علامة الفاصلة العشرية إذا كان الرمز رقماً قادماً من جوجل شيت
+            db_code = str(t.get('code', '')).split('.')[0].strip()
+            
+            if db_name == t_name.strip() and db_code == t_code.strip():
+                auth = True
+                break
+                
     if auth:
-        st.success(f"مرحباً بك: {t_name}")
+        st.success(f"مرحباً بك أستاذ: {t_name}")
         exam_type = st.text_input("نوع الامتحان:", value="النهائي")
         stage_field = st.text_input("المرحلة الدراسية:")
         subject_field = st.text_input("المادة العلمية:")
@@ -114,20 +119,22 @@ if role == "👨‍🏫 لوحة التدريسي":
                 
                 exam_payload = {
                     "sheet": "exams", "teacher": t_name, "exam_type": exam_type, "stage": stage_field,
-                    "subject": subject_field, "day": date_field, "date": date_field, "time": time_field,
+                    "subject": subject_field, "day": day_field, "date": date_field, "time": time_field,
                     "head": head_sig, "content": content, "status": "قيد التدقيق ⏳"
                 }
                 
                 if send_to_google_sheet(exam_payload):
-                    st.success("✅ تم إرسال وحفظ الأسئلة تلقائياً داخل الـ Google Sheet بنجاح واكتمل الترتيب أوتوماتيكياً!")
+                    st.success("✅ تم إرسال وحفظ الأسئلة تلقائياً داخل الـ Google Sheet بنجاح!")
                     st.balloons()
                 else:
                     st.error("❌ حدث خطأ أثناء الاتصال بالسحابة، يرجى التحقق من إعداد الرابط البرمجي في Secrets.")
             else:
                 st.error("يرجى ملء جميع الحقول ورفع ملف الأسئلة أولاً.")
+    elif t_name != "" or t_code != "":
+        st.error("❌ الاسم أو الرمز السري غير متطابق مع البيانات المسجلة في السحابة! يرجى التأكد من كتابته بدقة.")
 
 # ----------------------------------------------------
-# 2. لوحة المسؤول (توليد الرموز وحفظها مباشرة في الشيت)
+# 2. لوحة المسؤول
 # ----------------------------------------------------
 else:
     st.title("👑 بوابة المسؤول الوحيد للنظام")
@@ -146,12 +153,8 @@ else:
             if st.button("💾 توليد الرمز وإرساله تلقائياً للشيت"):
                 if new_name and new_code and new_phone:
                     teacher_payload = {
-                        "sheet": "teachers",
-                        "name": new_name,
-                        "code": new_code,
-                        "phone": new_phone
+                        "sheet": "teachers", "name": new_name, "code": new_code, "phone": new_phone
                     }
-                    
                     if send_to_google_sheet(teacher_payload):
                         st.success(f"✅ تم توليد الحساب للتدريسي {new_name} وحُفظ تلقائياً في ملف الـ Google Sheet!")
                         st.balloons()
@@ -172,7 +175,7 @@ else:
                 st.info("لا توجد ملفات أسئلة مسجلة حالياً في ورقة الـ exams داخل الشيت.")
             else:
                 for idx, exam in enumerate(exams_list):
-                    with st.expander(f"📋 أسئلة مادة ({exam.get('subject', 'غير محدد')}) - التدريسي: {exam.get('teacher', 'غير محدد')}"):
+                    with st.expander(f"📋 أسئلة مادة ({exam.get('subject', 'غير مححدد')}) - التدريسي: {exam.get('teacher', 'غير محدد')}"):
                         st.markdown(f"""
                         <div class="print-area">
                             <div class="main-header">
