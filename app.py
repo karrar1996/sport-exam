@@ -35,7 +35,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 🎯 تم وضع الـ ID الخاص بك هنا بنجاح ليرتبط بملفك فوراً
+# الـ ID الخاص بملفك الشخصي لقراءة البيانات مباشرة وبشكل مستقر
 SHEET_ID = "1es1v2CvHlmt8uHYnw9mzqBKF8k8VijGE2s5jMdT-PlA"
 
 TEACHERS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=teachers"
@@ -43,7 +43,7 @@ EXAMS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:
 
 def get_table_data(url):
     try:
-        # قراءة البيانات مباشرة لضمان التحديث اللحظي للأسماء المضافة
+        # قراءة البيانات مع تلافي مشاكل التخزين المؤقت لقراءة الأسماء الجديدة
         return pd.read_csv(url, index_col=False).to_dict(orient="records")
     except:
         return []
@@ -176,6 +176,7 @@ else:
             else:
                 for idx, exam in enumerate(exams_list):
                     with st.expander(f"📋 أسئلة مادة ({exam.get('subject', 'غير محدد')}) - التدريسي: {exam.get('teacher', 'غير محدد')}"):
+                        content_text = exam.get('content', 'لا يوجد محتوى')
                         st.markdown(f"""
                         <div class="print-area">
                             <div class="main-header">
@@ -198,9 +199,12 @@ else:
                                 </table>
                             </div>
                             <div style="white-space: pre-wrap; font-size:18px; padding:15px; border:1px solid #ccc; border-radius:5px; background:#fff; color:black; line-height:1.8; text-align:right;">
-{exam.get('content', 'لا يوجد محتوى')}
+{content_text}
                             </div>
                             <br>
                             <p style="text-align:left; font-weight:bold; color:black; padding-left:20px;">مدرس المادة: {exam.get('teacher', '-')}</p>
                         </div>
-                        """,
+                        """, unsafe_allow_html=True)
+                        st.markdown('<button onclick="window.print()" style="width:100%; font-weight:bold; background-color:#ff9a00; color:white; border:none; padding:8px; border-radius:5px; cursor:pointer;">🖨️ طباعة ورقة الأسئلة هذه فوراً</button>', unsafe_allow_html=True)
+    elif admin_password != "":
+        st.error("الرمز السري غير صحيح!")
